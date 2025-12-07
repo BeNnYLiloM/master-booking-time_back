@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
+router.get('/profile', masterController.getProfile);
 router.put('/profile', masterController.updateProfile);
 router.post('/services', masterController.createService);
 router.get('/services', masterController.getServices);

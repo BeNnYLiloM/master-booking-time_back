@@ -41,18 +41,25 @@ export const appointmentController = {
       const service = await db.query.services.findFirst({ where: eq(services.id, validation.data.serviceId) });
       
       if (master && service) {
+        // Получаем описание мастера из профиля
+        const masterProfile = master.masterProfile as { displayName?: string; description?: string } | null;
+        const masterDisplayName = masterProfile?.displayName || master.firstName || 'Мастер';
+        const masterDescription = masterProfile?.description || null;
+
         // Notify Master
         await notificationService.notifyNewBooking(
             master.telegramId,
-            req.user.firstName || 'Unknown',
+            req.user.firstName || 'Клиент',
             service.title,
             new Date(validation.data.dateStr),
             validation.data.timeStr
         );
 
-        // Notify Client
+        // Notify Client (с информацией о мастере)
         await notificationService.notifyBookingConfirmation(
             req.user.telegramId,
+            masterDisplayName,
+            masterDescription,
             service.title,
             new Date(validation.data.dateStr),
             validation.data.timeStr
@@ -71,5 +78,61 @@ export const appointmentController = {
     
     const appointments = await appointmentService.getAppointments(req.user.id, req.user.role as 'master' | 'client');
     return res.json(appointments);
+  },
+
+  async cancel(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      const appointment = await appointmentService.cancelAppointment(
+        appointmentId, 
+        req.user.id, 
+        req.user.role as 'master' | 'client'
+      );
+
+      // Уведомление об отмене
+      const master = await db.query.users.findFirst({ where: eq(users.id, appointment.masterId) });
+      const client = await db.query.users.findFirst({ where: eq(users.id, appointment.clientId) });
+      const service = appointment.serviceId 
+        ? await db.query.services.findFirst({ where: eq(services.id, appointment.serviceId) })
+        : null;
+
+      if (master && client && service) {
+        const masterProfile = master.masterProfile as { displayName?: string } | null;
+        const masterDisplayName = masterProfile?.displayName || master.firstName || 'Мастер';
+        const time = new Date(appointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+        // Если отменил клиент — уведомляем мастера
+        if (req.user.role === 'client') {
+          await notificationService.notifyCancellation(
+            master.telegramId,
+            client.firstName || 'Клиент',
+            service.title,
+            new Date(appointment.startTime),
+            time
+          );
+        }
+        // Если отменил мастер — уведомляем клиента
+        if (req.user.role === 'master') {
+          await notificationService.notifyCancellation(
+            client.telegramId,
+            masterDisplayName,
+            service.title,
+            new Date(appointment.startTime),
+            time,
+            true
+          );
+        }
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to cancel' });
+    }
   }
 };

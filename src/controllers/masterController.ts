@@ -19,6 +19,13 @@ const serviceSchema = z.object({
 });
 
 export const masterController = {
+  async getProfile(req: Request, res: Response) {
+    if (!req.user) return res.status(401).send();
+    
+    const profile = await masterService.getProfile(req.user.id);
+    return res.json({ profile });
+  },
+
   async updateProfile(req: Request, res: Response) {
     try {
       const validation = profileSchema.safeParse(req.body);

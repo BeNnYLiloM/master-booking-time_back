@@ -3,6 +3,29 @@ import { db } from '../db/index.js';
 import { users, services } from '../db/schema.js';
 
 export const masterService = {
+  async getProfile(userId: number) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId)
+    });
+    
+    if (!user) return null;
+    
+    // Возвращаем профиль с дефолтными значениями
+    const defaultProfile = {
+      displayName: '',
+      description: '',
+      workStartHour: 10,
+      workEndHour: 20,
+      slotDuration: 60,
+      daysOff: [] as number[]
+    };
+    
+    return {
+      ...defaultProfile,
+      ...(user.masterProfile as object || {})
+    };
+  },
+
   async updateProfile(userId: number, profileData: {
     displayName?: string;
     description?: string;

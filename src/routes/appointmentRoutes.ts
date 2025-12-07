@@ -7,6 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 router.post('/', appointmentController.create);
 router.get('/', appointmentController.list);
+router.patch('/:id/cancel', appointmentController.cancel);
 
 export default router;
 

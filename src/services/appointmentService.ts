@@ -71,6 +71,40 @@ export const appointmentService = {
       },
       orderBy: (appointments, { desc }) => [desc(appointments.startTime)],
     });
+  },
+
+  async cancelAppointment(appointmentId: number, userId: number, role: 'master' | 'client') {
+    // Проверяем что запись существует и принадлежит пользователю
+    const appointment = await db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+    });
+
+    if (!appointment) {
+      throw new Error('Запись не найдена');
+    }
+
+    // Клиент может отменить только свою запись
+    if (role === 'client' && appointment.clientId !== userId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    // Мастер может отменить записи к себе
+    if (role === 'master' && appointment.masterId !== userId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    // Нельзя отменить уже отменённую запись
+    if (appointment.status === 'cancelled') {
+      throw new Error('Запись уже отменена');
+    }
+
+    // Обновляем статус
+    const [updated] = await db.update(appointments)
+      .set({ status: 'cancelled' })
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    return updated;
   }
 };
 
