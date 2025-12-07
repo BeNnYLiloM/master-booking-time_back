@@ -51,7 +51,7 @@ export const appointmentService = {
           serviceId: data.serviceId,
           startTime: startTime,
           endTime: endTime,
-          status: 'confirmed', // Defaulting to confirmed for simplicity as per plan
+          status: 'pending', // Ожидает подтверждения мастером
           clientComment: data.comment
         })
         .returning();
@@ -105,6 +105,67 @@ export const appointmentService = {
       .returning();
 
     return updated;
+  },
+
+  async confirmAppointment(appointmentId: number, masterId: number) {
+    const appointment = await db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+    });
+
+    if (!appointment) {
+      throw new Error('Запись не найдена');
+    }
+
+    if (appointment.masterId !== masterId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    if (appointment.status !== 'pending') {
+      throw new Error('Запись уже обработана');
+    }
+
+    const [updated] = await db.update(appointments)
+      .set({ status: 'confirmed' })
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    return updated;
+  },
+
+  async rejectAppointment(appointmentId: number, masterId: number) {
+    const appointment = await db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+    });
+
+    if (!appointment) {
+      throw new Error('Запись не найдена');
+    }
+
+    if (appointment.masterId !== masterId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    if (appointment.status !== 'pending') {
+      throw new Error('Запись уже обработана');
+    }
+
+    const [updated] = await db.update(appointments)
+      .set({ status: 'cancelled' })
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    return updated;
+  },
+
+  async getAppointmentById(appointmentId: number) {
+    return db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+      with: {
+        service: true,
+        master: true,
+        client: true,
+      },
+    });
   }
 };
 

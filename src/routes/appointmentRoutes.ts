@@ -8,6 +8,8 @@ router.use(authMiddleware);
 router.post('/', appointmentController.create);
 router.get('/', appointmentController.list);
 router.patch('/:id/cancel', appointmentController.cancel);
+router.patch('/:id/confirm', appointmentController.confirm);
+router.patch('/:id/reject', appointmentController.reject);
 
 export default router;
 

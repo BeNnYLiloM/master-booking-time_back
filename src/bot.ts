@@ -1,5 +1,10 @@
 import { Telegraf, Markup } from 'telegraf';
 import dotenv from 'dotenv';
+import { appointmentService } from './services/appointmentService.js';
+import { notificationService } from './services/notificationService.js';
+import { db } from './db/index.js';
+import { users } from './db/schema.js';
+import { eq } from 'drizzle-orm';
 
 dotenv.config();
 
@@ -67,6 +72,117 @@ export function startBot() {
         'Откройте приложение, чтобы увидеть свою ссылку на Dashboard.',
         { parse_mode: 'Markdown' }
       );
+    });
+
+    // Обработка inline-кнопок подтверждения/отклонения записи
+    bot.action(/^confirm_(\d+)$/, async (ctx) => {
+      const appointmentId = parseInt(ctx.match[1]);
+      const telegramId = ctx.from?.id.toString();
+      
+      if (!telegramId) {
+        return ctx.answerCbQuery('Ошибка авторизации');
+      }
+
+      try {
+        // Находим мастера по telegramId
+        const master = await db.query.users.findFirst({
+          where: eq(users.telegramId, telegramId)
+        });
+
+        if (!master) {
+          return ctx.answerCbQuery('Мастер не найден');
+        }
+
+        // Подтверждаем запись
+        const appointment = await appointmentService.confirmAppointment(appointmentId, master.id);
+        
+        // Получаем полные данные для уведомления
+        const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+        
+        if (fullAppointment && fullAppointment.client && fullAppointment.service) {
+          const masterProfile = master.masterProfile as { displayName?: string; description?: string } | null;
+          const masterName = masterProfile?.displayName || master.firstName || 'Мастер';
+          const masterDescription = masterProfile?.description || null;
+          const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+          
+          // Уведомляем клиента
+          await notificationService.notifyBookingConfirmed(
+            fullAppointment.client.telegramId,
+            masterName,
+            masterDescription,
+            fullAppointment.service.title,
+            new Date(fullAppointment.startTime),
+            time
+          );
+        }
+
+        // Обновляем сообщение мастеру
+        await ctx.editMessageText(
+          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text + '\n\n✅ *Запись подтверждена*'
+            : '✅ Запись подтверждена',
+          { parse_mode: 'Markdown' }
+        );
+        
+        return ctx.answerCbQuery('✅ Запись подтверждена!');
+      } catch (error: any) {
+        console.error('Confirm error:', error);
+        return ctx.answerCbQuery(error.message || 'Ошибка подтверждения');
+      }
+    });
+
+    bot.action(/^reject_(\d+)$/, async (ctx) => {
+      const appointmentId = parseInt(ctx.match[1]);
+      const telegramId = ctx.from?.id.toString();
+      
+      if (!telegramId) {
+        return ctx.answerCbQuery('Ошибка авторизации');
+      }
+
+      try {
+        // Находим мастера по telegramId
+        const master = await db.query.users.findFirst({
+          where: eq(users.telegramId, telegramId)
+        });
+
+        if (!master) {
+          return ctx.answerCbQuery('Мастер не найден');
+        }
+
+        // Получаем данные до отклонения
+        const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+
+        // Отклоняем запись
+        await appointmentService.rejectAppointment(appointmentId, master.id);
+        
+        if (fullAppointment && fullAppointment.client && fullAppointment.service) {
+          const masterProfile = master.masterProfile as { displayName?: string } | null;
+          const masterName = masterProfile?.displayName || master.firstName || 'Мастер';
+          const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+          
+          // Уведомляем клиента об отклонении
+          await notificationService.notifyBookingRejected(
+            fullAppointment.client.telegramId,
+            masterName,
+            fullAppointment.service.title,
+            new Date(fullAppointment.startTime),
+            time
+          );
+        }
+
+        // Обновляем сообщение мастеру
+        await ctx.editMessageText(
+          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text + '\n\n❌ *Запись отклонена*'
+            : '❌ Запись отклонена',
+          { parse_mode: 'Markdown' }
+        );
+        
+        return ctx.answerCbQuery('❌ Запись отклонена');
+      } catch (error: any) {
+        console.error('Reject error:', error);
+        return ctx.answerCbQuery(error.message || 'Ошибка отклонения');
+      }
     });
 
     bot.launch().then(() => {

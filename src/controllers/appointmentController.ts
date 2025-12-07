@@ -46,17 +46,18 @@ export const appointmentController = {
         const masterDisplayName = masterProfile?.displayName || master.firstName || 'Мастер';
         const masterDescription = masterProfile?.description || null;
 
-        // Notify Master
+        // Notify Master (с inline-кнопками подтверждения)
         await notificationService.notifyNewBooking(
             master.telegramId,
+            appointment.id,
             req.user.firstName || 'Клиент',
             service.title,
             new Date(validation.data.dateStr),
             validation.data.timeStr
         );
 
-        // Notify Client (с информацией о мастере)
-        await notificationService.notifyBookingConfirmation(
+        // Notify Client (заявка отправлена, ожидает подтверждения)
+        await notificationService.notifyBookingPending(
             req.user.telegramId,
             masterDisplayName,
             masterDescription,
@@ -133,6 +134,82 @@ export const appointmentController = {
       return res.json(appointment);
     } catch (error: any) {
       return res.status(400).json({ error: error.message || 'Failed to cancel' });
+    }
+  },
+
+  async confirm(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      if (req.user.role !== 'master') return res.status(403).json({ error: 'Only master can confirm' });
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      // Получаем данные до подтверждения
+      const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+      
+      // Подтверждаем
+      const appointment = await appointmentService.confirmAppointment(appointmentId, req.user.id);
+
+      // Уведомляем клиента
+      if (fullAppointment && fullAppointment.client && fullAppointment.service) {
+        const masterProfile = req.user.masterProfile as { displayName?: string; description?: string } | null;
+        const masterName = masterProfile?.displayName || req.user.firstName || 'Мастер';
+        const masterDescription = masterProfile?.description || null;
+        const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        await notificationService.notifyBookingConfirmed(
+          fullAppointment.client.telegramId,
+          masterName,
+          masterDescription,
+          fullAppointment.service.title,
+          new Date(fullAppointment.startTime),
+          time
+        );
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to confirm' });
+    }
+  },
+
+  async reject(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      if (req.user.role !== 'master') return res.status(403).json({ error: 'Only master can reject' });
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      // Получаем данные до отклонения
+      const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+
+      // Отклоняем
+      const appointment = await appointmentService.rejectAppointment(appointmentId, req.user.id);
+
+      // Уведомляем клиента
+      if (fullAppointment && fullAppointment.client && fullAppointment.service) {
+        const masterProfile = req.user.masterProfile as { displayName?: string } | null;
+        const masterName = masterProfile?.displayName || req.user.firstName || 'Мастер';
+        const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        await notificationService.notifyBookingRejected(
+          fullAppointment.client.telegramId,
+          masterName,
+          fullAppointment.service.title,
+          new Date(fullAppointment.startTime),
+          time
+        );
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to reject' });
     }
   }
 };
