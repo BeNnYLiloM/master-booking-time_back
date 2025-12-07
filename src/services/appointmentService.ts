@@ -166,6 +166,84 @@ export const appointmentService = {
         client: true,
       },
     });
+  },
+
+  // Мастер отмечает что услуга оказана (ожидает подтверждения клиента)
+  async markAsAwaitingReview(appointmentId: number, masterId: number) {
+    const appointment = await db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+    });
+
+    if (!appointment) {
+      throw new Error('Запись не найдена');
+    }
+
+    if (appointment.masterId !== masterId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    if (appointment.status !== 'confirmed') {
+      throw new Error('Можно завершить только подтверждённую запись');
+    }
+
+    const [updated] = await db.update(appointments)
+      .set({ status: 'awaiting_review' })
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    return updated;
+  },
+
+  // Клиент подтверждает что услуга оказана
+  async confirmCompletion(appointmentId: number, clientId: number) {
+    const appointment = await db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+    });
+
+    if (!appointment) {
+      throw new Error('Запись не найдена');
+    }
+
+    if (appointment.clientId !== clientId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    if (appointment.status !== 'awaiting_review') {
+      throw new Error('Запись не ожидает подтверждения');
+    }
+
+    const [updated] = await db.update(appointments)
+      .set({ status: 'completed' })
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    return updated;
+  },
+
+  // Клиент оспаривает завершение (возвращает в confirmed)
+  async disputeCompletion(appointmentId: number, clientId: number) {
+    const appointment = await db.query.appointments.findFirst({
+      where: eq(appointments.id, appointmentId),
+    });
+
+    if (!appointment) {
+      throw new Error('Запись не найдена');
+    }
+
+    if (appointment.clientId !== clientId) {
+      throw new Error('Нет доступа к этой записи');
+    }
+
+    if (appointment.status !== 'awaiting_review') {
+      throw new Error('Запись не ожидает подтверждения');
+    }
+
+    const [updated] = await db.update(appointments)
+      .set({ status: 'confirmed' })
+      .where(eq(appointments.id, appointmentId))
+      .returning();
+
+    return updated;
   }
 };
 

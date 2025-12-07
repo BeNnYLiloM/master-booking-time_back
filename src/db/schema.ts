@@ -52,7 +52,7 @@ export const appointments = pgTable('appointments', {
   serviceId: integer('service_id').references(() => services.id),
   startTime: timestamp('start_time').notNull(),
   endTime: timestamp('end_time').notNull(),
-  status: text('status', { enum: ['pending', 'confirmed', 'cancelled'] }).default('confirmed').notNull(),
+  status: text('status', { enum: ['pending', 'confirmed', 'cancelled', 'awaiting_review', 'completed'] }).default('confirmed').notNull(),
   clientComment: text('client_comment'),
   createdAt: timestamp('created_at').defaultNow(),
 });

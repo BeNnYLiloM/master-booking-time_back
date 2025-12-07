@@ -211,5 +211,114 @@ export const appointmentController = {
     } catch (error: any) {
       return res.status(400).json({ error: error.message || 'Failed to reject' });
     }
+  },
+
+  // Мастер отмечает что услуга оказана
+  async markComplete(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      if (req.user.role !== 'master') return res.status(403).json({ error: 'Only master can mark as complete' });
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      // Получаем данные до изменения
+      const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+      
+      // Отмечаем как ожидающую подтверждения
+      const appointment = await appointmentService.markAsAwaitingReview(appointmentId, req.user.id);
+
+      // Уведомляем клиента
+      if (fullAppointment && fullAppointment.client && fullAppointment.service) {
+        const masterProfile = req.user.masterProfile as { displayName?: string } | null;
+        const masterName = masterProfile?.displayName || req.user.firstName || 'Мастер';
+        const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        await notificationService.notifyAwaitingReview(
+          fullAppointment.client.telegramId,
+          appointmentId,
+          masterName,
+          fullAppointment.service.title,
+          new Date(fullAppointment.startTime),
+          time
+        );
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to mark complete' });
+    }
+  },
+
+  // Клиент подтверждает завершение
+  async confirmComplete(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      // Получаем данные до изменения
+      const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+      
+      // Подтверждаем завершение
+      const appointment = await appointmentService.confirmCompletion(appointmentId, req.user.id);
+
+      // Уведомляем мастера
+      if (fullAppointment && fullAppointment.master && fullAppointment.service) {
+        const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        await notificationService.notifyCompletionConfirmed(
+          fullAppointment.master.telegramId,
+          req.user.firstName || 'Клиент',
+          fullAppointment.service.title,
+          new Date(fullAppointment.startTime),
+          time
+        );
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to confirm completion' });
+    }
+  },
+
+  // Клиент оспаривает завершение
+  async disputeComplete(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      // Получаем данные до изменения
+      const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+      
+      // Оспариваем
+      const appointment = await appointmentService.disputeCompletion(appointmentId, req.user.id);
+
+      // Уведомляем мастера
+      if (fullAppointment && fullAppointment.master && fullAppointment.service) {
+        const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        await notificationService.notifyCompletionDisputed(
+          fullAppointment.master.telegramId,
+          req.user.firstName || 'Клиент',
+          fullAppointment.service.title,
+          new Date(fullAppointment.startTime),
+          time
+        );
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to dispute completion' });
+    }
   }
 };

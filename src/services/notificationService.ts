@@ -160,6 +160,91 @@ export const notificationService = {
     } catch (error) {
       console.error('Failed to send cancellation notification:', error);
     }
+  },
+
+  // Уведомление клиенту о завершении услуги (с кнопками подтверждения)
+  async notifyAwaitingReview(
+    clientTelegramId: string,
+    appointmentId: number,
+    masterName: string,
+    serviceTitle: string,
+    date: Date,
+    time: string
+  ) {
+    if (!bot) return;
+
+    try {
+      const dateStr = formatDateRu(date);
+      
+      const message = `🎉 *Услуга оказана!*\n\n` +
+        `Мастер *${masterName}* отметил, что услуга выполнена.\n\n` +
+        `💇‍♀️ Услуга: ${serviceTitle}\n` +
+        `📅 ${dateStr}\n` +
+        `⏰ Время: ${time}\n\n` +
+        `Пожалуйста, подтвердите:`;
+
+      await bot.telegram.sendMessage(clientTelegramId, message, {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          Markup.button.callback('✅ Подтверждаю', `complete_confirm_${appointmentId}`),
+          Markup.button.callback('❌ Оспорить', `complete_dispute_${appointmentId}`)
+        ])
+      });
+    } catch (error) {
+      console.error('Failed to send awaiting review notification:', error);
+    }
+  },
+
+  // Уведомление мастеру о подтверждении завершения
+  async notifyCompletionConfirmed(
+    masterTelegramId: string,
+    clientName: string,
+    serviceTitle: string,
+    date: Date,
+    time: string
+  ) {
+    if (!bot) return;
+
+    try {
+      const dateStr = formatDateRu(date);
+      
+      const message = `✅ *Услуга подтверждена клиентом!*\n\n` +
+        `Клиент *${clientName}* подтвердил выполнение услуги.\n\n` +
+        `💇‍♀️ Услуга: ${serviceTitle}\n` +
+        `📅 ${dateStr}\n` +
+        `⏰ Время: ${time}`;
+
+      await bot.telegram.sendMessage(masterTelegramId, message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Failed to send completion confirmed notification:', error);
+    }
+  },
+
+  // Уведомление мастеру об оспаривании
+  async notifyCompletionDisputed(
+    masterTelegramId: string,
+    clientName: string,
+    serviceTitle: string,
+    date: Date,
+    time: string
+  ) {
+    if (!bot) return;
+
+    try {
+      const dateStr = formatDateRu(date);
+      
+      const message = `⚠️ *Клиент оспорил завершение!*\n\n` +
+        `Клиент *${clientName}* не подтвердил выполнение услуги.\n` +
+        `Запись возвращена в статус "Подтверждено".\n\n` +
+        `💇‍♀️ Услуга: ${serviceTitle}\n` +
+        `📅 ${dateStr}\n` +
+        `⏰ Время: ${time}\n\n` +
+        `Свяжитесь с клиентом для уточнения.`;
+
+      await bot.telegram.sendMessage(masterTelegramId, message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Failed to send completion disputed notification:', error);
+    }
   }
 };
 

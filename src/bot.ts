@@ -350,6 +350,112 @@ export function startBot() {
       }
     });
 
+    // Клиент подтверждает завершение услуги
+    bot.action(/^complete_confirm_(\d+)$/, async (ctx) => {
+      const appointmentId = parseInt(ctx.match[1]);
+      const telegramId = ctx.from?.id.toString();
+      
+      if (!telegramId) {
+        return ctx.answerCbQuery('Ошибка авторизации');
+      }
+
+      try {
+        // Находим клиента по telegramId
+        const client = await db.query.users.findFirst({
+          where: eq(users.telegramId, telegramId)
+        });
+
+        if (!client) {
+          return ctx.answerCbQuery('Пользователь не найден');
+        }
+
+        // Получаем данные до подтверждения
+        const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+
+        // Подтверждаем завершение
+        await appointmentService.confirmCompletion(appointmentId, client.id);
+        
+        if (fullAppointment && fullAppointment.master && fullAppointment.service) {
+          const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+          
+          // Уведомляем мастера
+          await notificationService.notifyCompletionConfirmed(
+            fullAppointment.master.telegramId,
+            client.firstName || 'Клиент',
+            fullAppointment.service.title,
+            new Date(fullAppointment.startTime),
+            time
+          );
+        }
+
+        // Обновляем сообщение клиенту
+        await ctx.editMessageText(
+          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text + '\n\n✅ *Вы подтвердили выполнение услуги. Спасибо!*'
+            : '✅ Услуга подтверждена',
+          { parse_mode: 'Markdown' }
+        );
+        
+        return ctx.answerCbQuery('✅ Спасибо за подтверждение!');
+      } catch (error: any) {
+        console.error('Complete confirm error:', error);
+        return ctx.answerCbQuery(error.message || 'Ошибка подтверждения');
+      }
+    });
+
+    // Клиент оспаривает завершение услуги
+    bot.action(/^complete_dispute_(\d+)$/, async (ctx) => {
+      const appointmentId = parseInt(ctx.match[1]);
+      const telegramId = ctx.from?.id.toString();
+      
+      if (!telegramId) {
+        return ctx.answerCbQuery('Ошибка авторизации');
+      }
+
+      try {
+        // Находим клиента по telegramId
+        const client = await db.query.users.findFirst({
+          where: eq(users.telegramId, telegramId)
+        });
+
+        if (!client) {
+          return ctx.answerCbQuery('Пользователь не найден');
+        }
+
+        // Получаем данные до оспаривания
+        const fullAppointment = await appointmentService.getAppointmentById(appointmentId);
+
+        // Оспариваем завершение
+        await appointmentService.disputeCompletion(appointmentId, client.id);
+        
+        if (fullAppointment && fullAppointment.master && fullAppointment.service) {
+          const time = new Date(fullAppointment.startTime).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+          
+          // Уведомляем мастера
+          await notificationService.notifyCompletionDisputed(
+            fullAppointment.master.telegramId,
+            client.firstName || 'Клиент',
+            fullAppointment.service.title,
+            new Date(fullAppointment.startTime),
+            time
+          );
+        }
+
+        // Обновляем сообщение клиенту
+        await ctx.editMessageText(
+          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text + '\n\n⚠️ *Вы оспорили завершение. Мастер получил уведомление.*'
+            : '⚠️ Завершение оспорено',
+          { parse_mode: 'Markdown' }
+        );
+        
+        return ctx.answerCbQuery('⚠️ Мастер уведомлён');
+      } catch (error: any) {
+        console.error('Complete dispute error:', error);
+        return ctx.answerCbQuery(error.message || 'Ошибка');
+      }
+    });
+
     bot.launch().then(() => {
       console.log('✅ Telegram Bot launched');
       console.log(`📱 WEB_APP_URL: ${process.env.WEB_APP_URL || 'NOT SET'}`);
