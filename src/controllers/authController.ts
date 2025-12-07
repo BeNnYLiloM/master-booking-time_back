@@ -38,22 +38,5 @@ export const authController = {
       return res.status(500).json({ error: 'Internal server error' });
     }
   },
-
-  async becomeMaster(req: Request, res: Response) {
-    try {
-      const user = req.user;
-      
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-
-      const updatedUser = await authService.becomeMaster(user.id);
-      
-      return res.json({ user: updatedUser });
-    } catch (error) {
-      console.error('Become master error:', error);
-      return res.status(500).json({ error: 'Internal server error' });
-    }
-  },
 };
 

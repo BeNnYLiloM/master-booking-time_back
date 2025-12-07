@@ -5,6 +5,7 @@ import { notificationService } from './services/notificationService.js';
 import { db } from './db/index.js';
 import { users } from './db/schema.js';
 import { eq } from 'drizzle-orm';
+import { authService } from './services/authService.js';
 
 dotenv.config();
 
@@ -47,8 +48,8 @@ export function startBot() {
       ctx.reply(
         '👋 Добро пожаловать в MasterBookBot!\n\n' +
         '🎯 Это приложение для записи к мастерам.\n\n' +
-        '• Если вы **мастер** — откройте приложение и настройте свой профиль\n' +
-        '• Если вы **клиент** — попросите мастера прислать вам ссылку для записи',
+        '• Для записи — попросите мастера прислать вам ссылку\n' +
+        '• Хотите стать мастером? Напишите /make\\_master',
         {
           parse_mode: 'Markdown',
           ...Markup.inlineKeyboard([
@@ -58,18 +59,182 @@ export function startBot() {
       );
     });
 
+    // Команда /make_master — заявка на становление мастером
+    bot.command('make_master', async (ctx) => {
+      const telegramId = ctx.from.id.toString();
+      const adminId = process.env.ADMIN_TELEGRAM_ID;
+      
+      if (!adminId) {
+        return ctx.reply('⚠️ Регистрация мастеров временно недоступна. Обратитесь к администратору.');
+      }
+
+      // Проверяем, есть ли пользователь в БД и его роль
+      let user = await db.query.users.findFirst({
+        where: eq(users.telegramId, telegramId)
+      });
+
+      // Если пользователя нет — создаём
+      if (!user) {
+        const [newUser] = await db.insert(users)
+          .values({
+            telegramId: telegramId,
+            firstName: ctx.from.first_name,
+            username: ctx.from.username,
+            role: 'client'
+          })
+          .returning();
+        user = newUser;
+      }
+
+      // Если уже мастер
+      if (user.role === 'master') {
+        return ctx.reply(
+          '✅ Вы уже зарегистрированы как мастер!\n\n' +
+          'Откройте приложение для настройки профиля.',
+          Markup.inlineKeyboard([
+            Markup.button.webApp('📱 Открыть приложение', process.env.WEB_APP_URL || '')
+          ])
+        );
+      }
+
+      // Отправляем заявку админу
+      try {
+        const userName = ctx.from.first_name + (ctx.from.last_name ? ' ' + ctx.from.last_name : '');
+        const userLink = ctx.from.username ? `@${ctx.from.username}` : `ID: ${ctx.from.id}`;
+        
+        await bot.telegram.sendMessage(
+          adminId,
+          `📝 *Заявка на регистрацию мастера*\n\n` +
+          `👤 Имя: ${userName}\n` +
+          `🔗 ${userLink}\n` +
+          `🆔 Telegram ID: \`${ctx.from.id}\``,
+          {
+            parse_mode: 'Markdown',
+            ...Markup.inlineKeyboard([
+              Markup.button.callback('✅ Одобрить', `approve_master_${ctx.from.id}`),
+              Markup.button.callback('❌ Отклонить', `decline_master_${ctx.from.id}`)
+            ])
+          }
+        );
+
+        return ctx.reply(
+          '📨 *Заявка отправлена!*\n\n' +
+          'Администратор рассмотрит вашу заявку и вы получите уведомление.',
+          { parse_mode: 'Markdown' }
+        );
+      } catch (error) {
+        console.error('Failed to send master request to admin:', error);
+        return ctx.reply('⚠️ Не удалось отправить заявку. Попробуйте позже.');
+      }
+    });
+
+    // Обработка одобрения заявки мастера админом
+    bot.action(/^approve_master_(\d+)$/, async (ctx) => {
+      const targetTelegramId = ctx.match[1];
+      const adminId = process.env.ADMIN_TELEGRAM_ID;
+      
+      // Проверяем что это админ
+      if (ctx.from?.id.toString() !== adminId) {
+        return ctx.answerCbQuery('❌ Только админ может одобрять заявки');
+      }
+
+      try {
+        // Обновляем роль пользователя
+        await db.update(users)
+          .set({ role: 'master' })
+          .where(eq(users.telegramId, targetTelegramId));
+
+        // Уведомляем пользователя
+        await bot.telegram.sendMessage(
+          targetTelegramId,
+          '🎉 *Поздравляем! Вы стали мастером!*\n\n' +
+          'Теперь вы можете:\n' +
+          '• Настроить свой профиль и услуги\n' +
+          '• Получить ссылку для клиентов\n' +
+          '• Принимать записи\n\n' +
+          'Откройте приложение для начала работы!',
+          {
+            parse_mode: 'Markdown',
+            ...Markup.inlineKeyboard([
+              Markup.button.webApp('📱 Открыть приложение', process.env.WEB_APP_URL || '')
+            ])
+          }
+        );
+
+        // Обновляем сообщение админу
+        await ctx.editMessageText(
+          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text + '\n\n✅ *Одобрено*'
+            : '✅ Заявка одобрена',
+          { parse_mode: 'Markdown' }
+        );
+
+        return ctx.answerCbQuery('✅ Мастер добавлен!');
+      } catch (error) {
+        console.error('Approve master error:', error);
+        return ctx.answerCbQuery('Ошибка при одобрении');
+      }
+    });
+
+    // Обработка отклонения заявки мастера
+    bot.action(/^decline_master_(\d+)$/, async (ctx) => {
+      const targetTelegramId = ctx.match[1];
+      const adminId = process.env.ADMIN_TELEGRAM_ID;
+      
+      // Проверяем что это админ
+      if (ctx.from?.id.toString() !== adminId) {
+        return ctx.answerCbQuery('❌ Только админ может отклонять заявки');
+      }
+
+      try {
+        // Уведомляем пользователя
+        await bot.telegram.sendMessage(
+          targetTelegramId,
+          '😔 *Заявка отклонена*\n\n' +
+          'К сожалению, ваша заявка на регистрацию мастера была отклонена.\n\n' +
+          'Если у вас есть вопросы, свяжитесь с администратором.',
+          { parse_mode: 'Markdown' }
+        );
+
+        // Обновляем сообщение админу
+        await ctx.editMessageText(
+          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text + '\n\n❌ *Отклонено*'
+            : '❌ Заявка отклонена',
+          { parse_mode: 'Markdown' }
+        );
+
+        return ctx.answerCbQuery('❌ Заявка отклонена');
+      } catch (error) {
+        console.error('Decline master error:', error);
+        return ctx.answerCbQuery('Ошибка при отклонении');
+      }
+    });
+
     // Команда для мастера - получить ссылку для клиентов
     bot.command('mylink', async (ctx) => {
-      const webAppUrl = process.env.WEB_APP_URL;
+      const telegramId = ctx.from.id.toString();
       const botUsername = ctx.botInfo?.username;
       
-      // Тут нужно получить ID мастера из БД по telegramId
-      // Пока упрощённо - показываем инструкцию
+      // Получаем пользователя из БД
+      const user = await db.query.users.findFirst({
+        where: eq(users.telegramId, telegramId)
+      });
+
+      if (!user || user.role !== 'master') {
+        return ctx.reply(
+          '⚠️ Эта команда доступна только мастерам.\n\n' +
+          'Хотите стать мастером? Напишите /make\\_master',
+          { parse_mode: 'Markdown' }
+        );
+      }
+
+      const bookingLink = `https://t.me/${botUsername}?startapp=book_${user.id}`;
+      
       ctx.reply(
-        '🔗 Ваша ссылка для клиентов:\n\n' +
-        `\`https://t.me/${botUsername}?startapp=book_YOUR_ID\`\n\n` +
-        '_(Замените YOUR_ID на ваш ID из приложения)_\n\n' +
-        'Откройте приложение, чтобы увидеть свою ссылку на Dashboard.',
+        '🔗 *Ваша ссылка для клиентов:*\n\n' +
+        `\`${bookingLink}\`\n\n` +
+        'Отправьте эту ссылку клиентам для записи к вам.',
         { parse_mode: 'Markdown' }
       );
     });
