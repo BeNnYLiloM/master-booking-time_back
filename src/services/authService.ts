@@ -46,15 +46,25 @@ export const authService = {
   },
 
   async becomeMaster(userId: number) {
+    // Создаём дефолтное расписание
+    const defaultSchedule: any = {};
+    for (let i = 0; i < 7; i++) {
+      defaultSchedule[i] = {
+        enabled: i >= 1 && i <= 5, // Пн-Пт включены
+        start: '09:00',
+        end: '18:00'
+      };
+    }
+    
     const [updatedUser] = await db
       .update(users)
       .set({
         role: 'master',
         masterProfile: {
-          workStartHour: 10,
-          workEndHour: 20,
+          displayName: '',
+          description: '',
           slotDuration: 60,
-          daysOff: [0, 6], // Вс и Сб по умолчанию
+          schedule: defaultSchedule
         },
       })
       .where(eq(users.id, userId))
