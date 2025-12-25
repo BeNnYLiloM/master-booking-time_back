@@ -27,16 +27,6 @@ async function makeMaster() {
   });
 
   if (!existingUser) {
-    // Создаём дефолтное расписание
-    const defaultSchedule: any = {};
-    for (let i = 0; i < 7; i++) {
-      defaultSchedule[i] = {
-        enabled: i >= 1 && i <= 5, // Пн-Пт включены
-        start: '09:00',
-        end: '18:00'
-      };
-    }
-    
     // Создаём нового мастера
     const [newUser] = await db.insert(users).values({
       telegramId: telegramId,
@@ -46,22 +36,12 @@ async function makeMaster() {
         displayName: 'Мой салон',
         description: 'Описание услуг',
         slotDuration: 60,
-        schedule: defaultSchedule
+        workingDates: {}
       }
     }).returning();
     
     console.log('✅ New master created:', newUser);
   } else {
-    // Создаём дефолтное расписание если профиля нет
-    const defaultSchedule: any = {};
-    for (let i = 0; i < 7; i++) {
-      defaultSchedule[i] = {
-        enabled: i >= 1 && i <= 5,
-        start: '09:00',
-        end: '18:00'
-      };
-    }
-    
     // Обновляем существующего
     await db.update(users)
       .set({ 
@@ -70,7 +50,7 @@ async function makeMaster() {
           displayName: existingUser.firstName || 'Мастер',
           description: 'Описание услуг',
           slotDuration: 60,
-          schedule: defaultSchedule
+          workingDates: {}
         }
       })
       .where(eq(users.telegramId, telegramId));

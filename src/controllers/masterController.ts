@@ -6,10 +6,9 @@ const profileSchema = z.object({
   displayName: z.string().optional(),
   description: z.string().optional(),
   slotDuration: z.number().min(15).max(180), // 15 min to 3 hours
-  schedule: z.record(
-    z.string(),
+  workingDates: z.record(
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD
     z.object({
-      enabled: z.boolean(),
       start: z.string().regex(/^\d{2}:\d{2}$/), // HH:MM
       end: z.string().regex(/^\d{2}:\d{2}$/)    // HH:MM
     })

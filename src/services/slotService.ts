@@ -21,12 +21,11 @@ export const slotService = {
       throw new Error('Invalid date format');
     }
 
-    // 2. Check Day Schedule (0 = Sunday, 1 = Monday, etc.)
-    const dayOfWeek = targetDate.getDay();
-    const daySchedule = masterProfile.schedule?.[dayOfWeek];
+    // 2. Check if date exists in workingDates
+    const daySchedule = masterProfile.workingDates?.[dateStr];
     
-    if (!daySchedule || !daySchedule.enabled) {
-      return []; // Day off or not configured
+    if (!daySchedule) {
+      return []; // Day not configured as working day
     }
 
     // 3. Generate Grid

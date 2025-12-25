@@ -13,11 +13,10 @@ export const users = pgTable('users', {
     displayName?: string;
     description?: string;
     slotDuration: number;
-    schedule: {
-      [key: number]: {
-        enabled: boolean;
-        start: string; // "HH:MM"
-        end: string;   // "HH:MM"
+    workingDates: {
+      [date: string]: { // "YYYY-MM-DD"
+        start: string;  // "HH:MM"
+        end: string;    // "HH:MM"
       };
     };
   }>(),

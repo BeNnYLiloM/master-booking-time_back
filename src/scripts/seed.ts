@@ -8,16 +8,6 @@ dotenv.config();
 async function seed() {
   console.log('🌱 Seeding database...');
 
-  // Создаём дефолтное расписание
-  const defaultSchedule: any = {};
-  for (let i = 0; i < 7; i++) {
-    defaultSchedule[i] = {
-      enabled: i >= 1 && i <= 5, // Пн-Пт включены
-      start: '10:00',
-      end: '20:00'
-    };
-  }
-
   // Создаём тестового мастера
   const [master] = await db.insert(users).values({
     telegramId: '123456789', // Тестовый ID
@@ -28,7 +18,7 @@ async function seed() {
       displayName: 'Анна Мастер',
       description: 'Профессиональный мастер маникюра',
       slotDuration: 60, // 1 час
-      schedule: defaultSchedule
+      workingDates: {}
     }
   }).returning();
 

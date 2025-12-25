@@ -10,21 +10,11 @@ export const masterService = {
     
     if (!user) return null;
     
-    // Возвращаем профиль с дефолтными значениями
-    const defaultSchedule: any = {};
-    for (let i = 0; i < 7; i++) {
-      defaultSchedule[i] = {
-        enabled: i >= 1 && i <= 5, // Пн-Пт включены по умолчанию
-        start: '09:00',
-        end: '18:00'
-      };
-    }
-    
     const defaultProfile = {
       displayName: '',
       description: '',
       slotDuration: 60,
-      schedule: defaultSchedule
+      workingDates: {} as Record<string, { start: string; end: string }>
     };
     
     return {
@@ -37,9 +27,8 @@ export const masterService = {
     displayName?: string;
     description?: string;
     slotDuration: number;
-    schedule: {
-      [key: number]: {
-        enabled: boolean;
+    workingDates: {
+      [date: string]: {
         start: string;
         end: string;
       };
