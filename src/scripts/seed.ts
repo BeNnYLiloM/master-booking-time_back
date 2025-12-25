@@ -17,7 +17,6 @@ async function seed() {
     masterProfile: {
       displayName: 'Анна Мастер',
       description: 'Профессиональный мастер маникюра',
-      slotDuration: 60, // 1 час
       workingDates: {}
     }
   }).returning();

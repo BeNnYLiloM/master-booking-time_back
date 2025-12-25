@@ -53,7 +53,6 @@ export const authService = {
         masterProfile: {
           displayName: '',
           description: '',
-          slotDuration: 60,
           workingDates: {}
         },
       })

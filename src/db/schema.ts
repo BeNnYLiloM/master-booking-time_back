@@ -12,7 +12,6 @@ export const users = pgTable('users', {
   masterProfile: jsonb('master_profile').$type<{
     displayName?: string;
     description?: string;
-    slotDuration: number;
     workingDates: {
       [date: string]: { // "YYYY-MM-DD"
         start: string;  // "HH:MM"

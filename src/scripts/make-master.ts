@@ -35,7 +35,6 @@ async function makeMaster() {
       masterProfile: {
         displayName: 'Мой салон',
         description: 'Описание услуг',
-        slotDuration: 60,
         workingDates: {}
       }
     }).returning();
@@ -49,7 +48,6 @@ async function makeMaster() {
         masterProfile: existingUser.masterProfile || {
           displayName: existingUser.firstName || 'Мастер',
           description: 'Описание услуг',
-          slotDuration: 60,
           workingDates: {}
         }
       })

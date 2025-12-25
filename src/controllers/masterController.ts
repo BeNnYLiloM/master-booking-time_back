@@ -5,7 +5,6 @@ import { z } from 'zod';
 const profileSchema = z.object({
   displayName: z.string().optional(),
   description: z.string().optional(),
-  slotDuration: z.number().min(15).max(180), // 15 min to 3 hours
   workingDates: z.record(
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD
     z.object({

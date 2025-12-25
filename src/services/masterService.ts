@@ -13,7 +13,6 @@ export const masterService = {
     const defaultProfile = {
       displayName: '',
       description: '',
-      slotDuration: 60,
       workingDates: {} as Record<string, { start: string; end: string }>
     };
     
@@ -26,7 +25,6 @@ export const masterService = {
   async updateProfile(userId: number, profileData: {
     displayName?: string;
     description?: string;
-    slotDuration: number;
     workingDates: {
       [date: string]: {
         start: string;

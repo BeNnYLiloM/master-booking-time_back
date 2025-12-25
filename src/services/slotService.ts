@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { users, appointments } from '../db/schema.js';
 
 export const slotService = {
-  async getAvailableSlots(masterId: number, dateStr: string) {
+  async getAvailableSlots(masterId: number, dateStr: string, serviceDuration: number) {
     // 1. Fetch Master Config
     const master = await db.query.users.findFirst({
       where: eq(users.id, masterId),
@@ -28,9 +28,9 @@ export const slotService = {
       return []; // Day not configured as working day
     }
 
-    // 3. Generate Grid
+    // 3. Generate Grid with service duration
     const slots: { time: string; isAvailable: boolean }[] = [];
-    const slotDurationMs = masterProfile.slotDuration * 60 * 1000;
+    const slotDurationMs = serviceDuration * 60 * 1000;
 
     // Parse start and end times from schedule (format "HH:MM")
     const [startHour, startMinute] = daySchedule.start.split(':').map(Number);
@@ -56,8 +56,9 @@ export const slotService = {
       ),
     });
 
-    // 5. Filter Slots
+    // 5. Filter Slots - поминутный шаг для гибкости
     let currentSlotStart = new Date(workStart);
+    const stepMs = 15 * 60 * 1000; // Шаг 15 минут
 
     while (currentSlotStart.getTime() + slotDurationMs <= workEnd.getTime()) {
       const currentSlotEnd = new Date(currentSlotStart.getTime() + slotDurationMs);
@@ -74,8 +75,8 @@ export const slotService = {
         });
       }
 
-      // Next slot
-      currentSlotStart = new Date(currentSlotStart.getTime() + slotDurationMs);
+      // Next slot - шаг 15 минут
+      currentSlotStart = new Date(currentSlotStart.getTime() + stepMs);
     }
 
     return slots;
