@@ -36,11 +36,10 @@ export const slotService = {
     const [startHour, startMinute] = daySchedule.start.split(':').map(Number);
     const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
     
-    const workStart = new Date(dateStr);
-    workStart.setHours(startHour, startMinute, 0, 0);
-    
-    const workEnd = new Date(dateStr);
-    workEnd.setHours(endHour, endMinute, 0, 0);
+    // Создаём даты корректно - парсим YYYY-MM-DD как локальную дату
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const workStart = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
+    const workEnd = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
 
     // 4. Fetch Existing Bookings
     // We need appointments that overlap with the working day
