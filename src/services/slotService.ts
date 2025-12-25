@@ -21,25 +21,27 @@ export const slotService = {
       throw new Error('Invalid date format');
     }
 
-    // 2. Check Day Off (0 = Sunday, 1 = Monday, etc.)
+    // 2. Check Day Schedule (0 = Sunday, 1 = Monday, etc.)
     const dayOfWeek = targetDate.getDay();
-    if (masterProfile.daysOff.includes(dayOfWeek)) {
-      return []; // Day off
+    const daySchedule = masterProfile.schedule?.[dayOfWeek];
+    
+    if (!daySchedule || !daySchedule.enabled) {
+      return []; // Day off or not configured
     }
 
     // 3. Generate Grid
     const slots: { time: string; isAvailable: boolean }[] = [];
     const slotDurationMs = masterProfile.slotDuration * 60 * 1000;
 
-    // Set start and end times for the day in local time representation
-    // Note: We assume the dateStr passed is "YYYY-MM-DD" and we treat it as local date.
-    // To avoid timezone mess, we can construct dates relative to the input string.
+    // Parse start and end times from schedule (format "HH:MM")
+    const [startHour, startMinute] = daySchedule.start.split(':').map(Number);
+    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
     
     const workStart = new Date(dateStr);
-    workStart.setHours(masterProfile.workStartHour, 0, 0, 0);
+    workStart.setHours(startHour, startMinute, 0, 0);
     
     const workEnd = new Date(dateStr);
-    workEnd.setHours(masterProfile.workEndHour, 0, 0, 0);
+    workEnd.setHours(endHour, endMinute, 0, 0);
 
     // 4. Fetch Existing Bookings
     // We need appointments that overlap with the working day

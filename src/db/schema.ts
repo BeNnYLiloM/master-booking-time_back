@@ -12,10 +12,14 @@ export const users = pgTable('users', {
   masterProfile: jsonb('master_profile').$type<{
     displayName?: string;
     description?: string;
-    workStartHour: number;
-    workEndHour: number;
     slotDuration: number;
-    daysOff: number[];
+    schedule: {
+      [key: number]: {
+        enabled: boolean;
+        start: string; // "HH:MM"
+        end: string;   // "HH:MM"
+      };
+    };
   }>(),
   createdAt: timestamp('created_at').defaultNow(),
 });

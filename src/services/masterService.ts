@@ -11,13 +11,20 @@ export const masterService = {
     if (!user) return null;
     
     // Возвращаем профиль с дефолтными значениями
+    const defaultSchedule: any = {};
+    for (let i = 0; i < 7; i++) {
+      defaultSchedule[i] = {
+        enabled: i >= 1 && i <= 5, // Пн-Пт включены по умолчанию
+        start: '09:00',
+        end: '18:00'
+      };
+    }
+    
     const defaultProfile = {
       displayName: '',
       description: '',
-      workStartHour: 10,
-      workEndHour: 20,
       slotDuration: 60,
-      daysOff: [] as number[]
+      schedule: defaultSchedule
     };
     
     return {
@@ -29,10 +36,14 @@ export const masterService = {
   async updateProfile(userId: number, profileData: {
     displayName?: string;
     description?: string;
-    workStartHour: number;
-    workEndHour: number;
     slotDuration: number;
-    daysOff: number[];
+    schedule: {
+      [key: number]: {
+        enabled: boolean;
+        start: string;
+        end: string;
+      };
+    };
   }) {
     // Ensure user is master
     await db.update(users)
