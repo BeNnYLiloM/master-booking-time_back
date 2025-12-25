@@ -89,6 +89,7 @@ export const masterController = {
         columns: {
           id: true,
           firstName: true,
+          role: true,
           masterProfile: true
         }
       });
