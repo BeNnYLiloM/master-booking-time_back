@@ -5,10 +5,15 @@ import { z } from 'zod';
 const profileSchema = z.object({
   displayName: z.string().optional(),
   description: z.string().optional(),
-  workStartHour: z.number().min(0).max(23),
-  workEndHour: z.number().min(0).max(23),
   slotDuration: z.number().min(15).max(180), // 15 min to 3 hours
-  daysOff: z.array(z.number().min(0).max(6))
+  schedule: z.record(
+    z.string(),
+    z.object({
+      enabled: z.boolean(),
+      start: z.string().regex(/^\d{2}:\d{2}$/), // HH:MM
+      end: z.string().regex(/^\d{2}:\d{2}$/)    // HH:MM
+    })
+  )
 });
 
 const serviceSchema = z.object({
