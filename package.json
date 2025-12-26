@@ -11,7 +11,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/scripts/seed.ts",
-    "make-master": "tsx src/scripts/make-master.ts"
+    "make-master": "tsx src/scripts/make-master.ts",
+    "migrate": "tsx src/scripts/migrate.ts"
   },
   "keywords": [],
   "author": "",
