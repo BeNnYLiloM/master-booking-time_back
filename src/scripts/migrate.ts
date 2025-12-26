@@ -1,4 +1,4 @@
-import { db } from './db/index.js';
+import { db } from '../db/index.js';
 import { sql } from 'drizzle-orm';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,7 +12,7 @@ async function runMigration() {
   
   try {
     // Читаем SQL файл
-    const migrationPath = path.join(__dirname, '../migrations/001_add_location_fields.sql');
+    const migrationPath = path.join(__dirname, '../../migrations/001_add_location_fields.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
     
     // Выполняем миграцию
