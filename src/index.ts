@@ -18,6 +18,10 @@ import { sql } from 'drizzle-orm';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy: Railway, Heroku и другие PaaS используют прокси
+// Это нужно для корректной работы rate limiter и получения реального IP
+app.set('trust proxy', 1);
+
 // Безопасность: защита HTTP заголовков
 app.use(helmet());
 
