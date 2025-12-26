@@ -1,10 +1,10 @@
+// ВАЖНО: Sentry должен быть импортирован ПЕРВЫМ
+import './instrument.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { setupExpressErrorHandler, requestDataIntegration } from '@sentry/node';
 import authRoutes from './routes/authRoutes.js';
 import masterRoutes from './routes/masterRoutes.js';
@@ -15,29 +15,8 @@ import { startBot } from './bot.js';
 import { db } from './db/index.js';
 import { sql } from 'drizzle-orm';
 
-dotenv.config();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Инициализация Sentry (должна быть в самом начале)
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'development',
-    integrations: [
-      nodeProfilingIntegration(),
-      requestDataIntegration(),
-    ],
-    // Процент отслеживаемых транзакций
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-    // Процент профилирования
-    profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-  });
-  console.log('✅ Sentry initialized');
-} else {
-  console.warn('⚠️ SENTRY_DSN not found, Sentry disabled');
-}
 
 // Безопасность: защита HTTP заголовков
 app.use(helmet());
