@@ -1,5 +1,6 @@
 import { Telegraf, Markup } from 'telegraf';
 import dotenv from 'dotenv';
+import * as Sentry from '@sentry/node';
 import { appointmentService } from './services/appointmentService.js';
 import { notificationService } from './services/notificationService.js';
 import { db } from './db/index.js';
@@ -461,6 +462,21 @@ export function startBot() {
       console.log(`📱 WEB_APP_URL: ${process.env.WEB_APP_URL || 'NOT SET'}`);
     }).catch((err) => {
       console.error('❌ Failed to launch Telegram Bot', err);
+      Sentry.captureException(err);
+    });
+
+    // Глобальный обработчик ошибок бота
+    bot.catch((err, ctx) => {
+      console.error(`❌ Bot error for ${ctx.updateType}:`, err);
+      Sentry.captureException(err, {
+        contexts: {
+          telegram: {
+            update_type: ctx.updateType,
+            user_id: ctx.from?.id,
+            chat_id: ctx.chat?.id,
+          },
+        },
+      });
     });
 
     // Enable graceful stop
