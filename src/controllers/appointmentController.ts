@@ -12,7 +12,12 @@ const bookingSchema = z.object({
   serviceId: z.number(),
   dateStr: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   timeStr: z.string().regex(/^\d{2}:\d{2}$/),
-  comment: z.string().optional()
+  comment: z.string().optional(),
+  locationType: z.enum(['at_master', 'at_client']).optional(),
+  address: z.object({
+    text: z.string(),
+    coordinates: z.tuple([z.number(), z.number()]) // [lat, lng]
+  }).optional()
 });
 
 export const appointmentController = {

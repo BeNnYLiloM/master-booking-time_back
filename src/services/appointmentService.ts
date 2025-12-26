@@ -5,7 +5,15 @@ import { appointments, services, users } from '../db/schema.js';
 export const appointmentService = {
   async createAppointment(
     clientId: number,
-    data: { masterId: number; serviceId: number; dateStr: string; timeStr: string; comment?: string }
+    data: { 
+      masterId: number; 
+      serviceId: number; 
+      dateStr: string; 
+      timeStr: string; 
+      comment?: string;
+      locationType?: 'at_master' | 'at_client';
+      address?: { text: string; coordinates: [number, number] };
+    }
   ) {
     return await db.transaction(async (tx) => {
       // 1. Fetch Service and Master
@@ -52,7 +60,9 @@ export const appointmentService = {
           startTime: startTime,
           endTime: endTime,
           status: 'pending', // Ожидает подтверждения мастером
-          clientComment: data.comment
+          clientComment: data.comment,
+          locationType: data.locationType,
+          address: data.address
         })
         .returning();
 

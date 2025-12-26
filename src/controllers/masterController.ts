@@ -14,14 +14,22 @@ const profileSchema = z.object({
       start: z.string().regex(/^\d{2}:\d{2}$/), // HH:MM
       end: z.string().regex(/^\d{2}:\d{2}$/)    // HH:MM
     })
-  )
+  ),
+  location: z.object({
+    type: z.enum(['fixed', 'mobile', 'both']),
+    address: z.object({
+      text: z.string(),
+      coordinates: z.tuple([z.number(), z.number()]) // [lat, lng]
+    }).optional()
+  }).optional()
 });
 
 const serviceSchema = z.object({
   title: z.string().min(1),
   price: z.number().positive(),
   duration: z.number().positive(),
-  currency: z.string().default('RUB')
+  currency: z.string().default('RUB'),
+  locationType: z.enum(['at_master', 'at_client', 'both']).default('at_master')
 });
 
 export const masterController = {

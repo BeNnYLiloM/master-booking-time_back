@@ -18,6 +18,13 @@ export const users = pgTable('users', {
         end: string;    // "HH:MM"
       };
     };
+    location?: {
+      type: 'fixed' | 'mobile' | 'both'; // фиксированный адрес / выезд / оба
+      address?: {
+        text: string;
+        coordinates: [number, number]; // [lat, lng]
+      };
+    };
   }>(),
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -37,6 +44,7 @@ export const services = pgTable('services', {
   duration: integer('duration').default(60).notNull(), // minutes
   currency: text('currency').default('RUB').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
+  locationType: text('location_type', { enum: ['at_master', 'at_client', 'both'] }).default('at_master').notNull(),
 });
 
 export const servicesRelations = relations(services, ({ one }) => ({
@@ -56,6 +64,11 @@ export const appointments = pgTable('appointments', {
   endTime: timestamp('end_time').notNull(),
   status: text('status', { enum: ['pending', 'confirmed', 'cancelled', 'awaiting_review', 'completed'] }).default('confirmed').notNull(),
   clientComment: text('client_comment'),
+  locationType: text('location_type', { enum: ['at_master', 'at_client'] }),
+  address: jsonb('address').$type<{
+    text: string;
+    coordinates: [number, number]; // [lat, lng]
+  }>(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
