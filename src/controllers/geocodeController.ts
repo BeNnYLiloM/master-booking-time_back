@@ -2,10 +2,9 @@ import { Request, Response } from 'express';
 import axios from 'axios';
 
 const YANDEX_GEOCODER_API = 'https://geocode-maps.yandex.ru/1.x/';
-const YANDEX_SUGGEST_API = 'https://suggest-maps.yandex.ru/v1/suggest';
 
 export const geocodeController = {
-  // Получение подсказок адресов
+  // Получение подсказок адресов через Geocoder API
   async suggest(req: Request, res: Response) {
     try {
       const { text } = req.query;
@@ -19,18 +18,37 @@ export const geocodeController = {
         return res.status(500).json({ error: 'YANDEX_MAPS_KEY не настроен' });
       }
 
-      const response = await axios.get(YANDEX_SUGGEST_API, {
+      // Используем Geocoder API для поиска
+      const response = await axios.get(YANDEX_GEOCODER_API, {
         params: {
           apikey: apiKey,
-          text: text,
+          geocode: text,
+          format: 'json',
           results: 5,
           lang: 'ru_RU',
         },
       });
 
-      return res.json(response.data);
+      // Преобразуем ответ Geocoder в формат подсказок
+      const featureMembers = response.data.response.GeoObjectCollection.featureMember || [];
+      const results = featureMembers.map((member: any) => {
+        const geoObject = member.GeoObject;
+        const metadata = geoObject.metaDataProperty.GeocoderMetaData;
+        
+        return {
+          title: {
+            text: metadata.text, // Полный адрес
+          },
+          subtitle: {
+            text: metadata.Address?.formatted || '', // Форматированный адрес
+          },
+          tags: [metadata.kind], // Тип объекта (locality, street, house и т.д.)
+        };
+      });
+
+      return res.json({ results });
     } catch (error: any) {
-      console.error('Yandex Suggest API error:', error.message);
+      console.error('Yandex Geocoder API error:', error.message);
       return res.status(500).json({ 
         error: 'Ошибка получения подсказок',
         details: error.response?.data || error.message,
