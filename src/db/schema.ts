@@ -12,6 +12,7 @@ export const users = pgTable('users', {
   masterProfile: jsonb('master_profile').$type<{
     displayName?: string;
     description?: string;
+    avatarUrl?: string;
     workingDates: {
       [date: string]: { // "YYYY-MM-DD"
         start: string;  // "HH:MM"
@@ -45,6 +46,7 @@ export const services = pgTable('services', {
   currency: text('currency').default('RUB').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   locationType: text('location_type', { enum: ['at_master', 'at_client', 'both'] }).default('at_master').notNull(),
+  imageUrl: text('image_url'),
 });
 
 export const servicesRelations = relations(services, ({ one }) => ({

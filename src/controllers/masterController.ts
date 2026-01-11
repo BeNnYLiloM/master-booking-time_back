@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { uploadServiceImage, uploadAvatar } from '../utils/cloudinary.js';
 
 const profileSchema = z.object({
   displayName: z.string().optional(),
@@ -71,6 +72,76 @@ export const masterController = {
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: 'Failed to create service' });
+    }
+  },
+
+  async updateServiceImage(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      
+      const serviceId = Number(req.params.id);
+      if (isNaN(serviceId)) return res.status(400).json({ error: 'Invalid ID' });
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      const imageUrl = (file as any).path; // Cloudinary URL
+      const updated = await masterService.updateServiceImage(serviceId, req.user.id, imageUrl);
+      
+      return res.json({ service: updated });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to update service image' });
+    }
+  },
+
+  async deleteServiceImage(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      
+      const serviceId = Number(req.params.id);
+      if (isNaN(serviceId)) return res.status(400).json({ error: 'Invalid ID' });
+
+      const updated = await masterService.deleteServiceImage(serviceId, req.user.id);
+      
+      return res.json({ service: updated });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to delete service image' });
+    }
+  },
+
+  async uploadAvatar(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No image file provided' });
+      }
+
+      const avatarUrl = (file as any).path; // Cloudinary URL
+      const user = await masterService.updateAvatar(req.user.id, avatarUrl);
+      
+      return res.json({ user });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to upload avatar' });
+    }
+  },
+
+  async deleteAvatar(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+
+      const user = await masterService.deleteAvatar(req.user.id);
+      
+      return res.json({ user });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to delete avatar' });
     }
   },
 
