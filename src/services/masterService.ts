@@ -26,6 +26,7 @@ export const masterService = {
   async updateProfile(userId: number, profileData: {
     displayName?: string;
     description?: string;
+    phoneNumber?: string;
     workingDates: {
       [date: string]: {
         start: string;
@@ -68,6 +69,23 @@ export const masterService = {
         eq(services.isActive, true)
       )
     });
+  },
+
+  async updateService(serviceId: number, userId: number, data: {
+    title?: string;
+    price?: number;
+    duration?: number;
+    currency?: string;
+    locationType?: 'at_master' | 'at_client' | 'both';
+  }) {
+    const [updated] = await db.update(services)
+      .set(data)
+      .where(and(
+        eq(services.id, serviceId),
+        eq(services.masterId, userId)
+      ))
+      .returning();
+    return updated;
   },
 
   async deleteService(serviceId: number, userId: number) {
@@ -161,15 +179,15 @@ export const masterService = {
     }
 
     // Удаляем старый аватар если есть
-    const currentProfile = user.masterProfile as { avatarUrl?: string } | null;
+    const currentProfile = user.masterProfile as { avatarUrl?: string; workingDates?: Record<string, { start: string; end: string }> } | null;
     if (currentProfile?.avatarUrl) {
       await deleteImage(currentProfile.avatarUrl);
     }
 
-    // Обновляем профиль с новым аватаром
+    // Обновляем профиль с новым аватаром, сохраняя все существующие поля
     const updatedProfile = {
-      workingDates: {},
       ...(currentProfile || {}),
+      workingDates: currentProfile?.workingDates || {},
       avatarUrl
     };
 
@@ -191,16 +209,16 @@ export const masterService = {
       throw new Error('User not found');
     }
 
-    const currentProfile = user.masterProfile as { avatarUrl?: string } | null;
+    const currentProfile = user.masterProfile as { avatarUrl?: string; workingDates?: Record<string, { start: string; end: string }> } | null;
     if (currentProfile?.avatarUrl) {
       await deleteImage(currentProfile.avatarUrl);
     }
 
-    // Удаляем avatarUrl из профиля
+    // Удаляем avatarUrl из профиля, сохраняя все остальные поля
+    const { avatarUrl, ...restProfile } = currentProfile || {};
     const updatedProfile = {
-      workingDates: {},
-      ...(currentProfile || {}),
-      avatarUrl: undefined
+      ...restProfile,
+      workingDates: currentProfile?.workingDates || {}
     };
 
     await db.update(users)

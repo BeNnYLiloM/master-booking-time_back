@@ -9,6 +9,7 @@ import { uploadServiceImage, uploadAvatar } from '../utils/cloudinary.js';
 const profileSchema = z.object({
   displayName: z.string().optional(),
   description: z.string().optional(),
+  phoneNumber: z.string().optional(),
   workingDates: z.record(
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD
     z.object({
@@ -72,6 +73,28 @@ export const masterController = {
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: 'Failed to create service' });
+    }
+  },
+
+  async updateService(req: Request, res: Response) {
+    try {
+      const serviceId = Number(req.params.id);
+      if (isNaN(serviceId)) return res.status(400).json({ error: 'Invalid ID' });
+
+      const validation = serviceSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      if (!req.user) return res.status(401).send();
+
+      const service = await masterService.updateService(serviceId, req.user.id, validation.data);
+      if (!service) return res.status(404).json({ error: 'Service not found' });
+      
+      return res.json({ service });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to update service' });
     }
   },
 

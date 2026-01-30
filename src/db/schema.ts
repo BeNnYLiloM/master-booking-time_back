@@ -13,6 +13,7 @@ export const users = pgTable('users', {
     displayName?: string;
     description?: string;
     avatarUrl?: string;
+    phoneNumber?: string;
     workingDates: {
       [date: string]: { // "YYYY-MM-DD"
         start: string;  // "HH:MM"

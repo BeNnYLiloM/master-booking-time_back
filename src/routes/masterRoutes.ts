@@ -14,6 +14,7 @@ router.delete('/profile/avatar', masterController.deleteAvatar);
 
 router.post('/services', masterController.createService);
 router.get('/services', masterController.getServices);
+router.put('/services/:id', masterController.updateService);
 router.put('/services/:id/image', uploadServiceImage.single('image'), masterController.updateServiceImage);
 router.delete('/services/:id/image', masterController.deleteServiceImage);
 router.delete('/services/:id', masterController.deleteService);
