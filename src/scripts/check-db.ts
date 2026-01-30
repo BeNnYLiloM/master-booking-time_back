@@ -24,6 +24,19 @@ async function checkDB() {
     `);
     console.table(appointmentsColumns.rows);
     
+    console.log('\n📋 Таблица reviews:');
+    const reviewsColumns = await db.execute(sql`
+      SELECT column_name, data_type, column_default 
+      FROM information_schema.columns 
+      WHERE table_name = 'reviews' 
+      ORDER BY ordinal_position;
+    `);
+    if (reviewsColumns.rows.length > 0) {
+      console.table(reviewsColumns.rows);
+    } else {
+      console.log('❌ Таблица reviews не найдена!');
+    }
+    
     // Проверяем наличие нужных полей
     const hasServiceLocationType = servicesColumns.rows.some((row: any) => row.column_name === 'location_type');
     const hasAppointmentLocationType = appointmentsColumns.rows.some((row: any) => row.column_name === 'location_type');
