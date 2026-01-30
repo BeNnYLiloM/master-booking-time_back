@@ -168,6 +168,7 @@ export const masterService = {
 
     // Обновляем профиль с новым аватаром
     const updatedProfile = {
+      workingDates: {},
       ...(currentProfile || {}),
       avatarUrl
     };
@@ -197,6 +198,7 @@ export const masterService = {
 
     // Удаляем avatarUrl из профиля
     const updatedProfile = {
+      workingDates: {},
       ...(currentProfile || {}),
       avatarUrl: undefined
     };
