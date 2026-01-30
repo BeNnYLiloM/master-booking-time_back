@@ -245,6 +245,68 @@ export const notificationService = {
     } catch (error) {
       console.error('Failed to send completion disputed notification:', error);
     }
+  },
+
+  // Напоминание клиенту за 24 часа до записи
+  async sendReminder24h(
+    clientTelegramId: string,
+    masterName: string,
+    masterDescription: string | null,
+    serviceTitle: string,
+    date: Date,
+    time: string
+  ) {
+    if (!bot) return;
+
+    try {
+      const dateStr = formatDateRu(date);
+      const masterInfo = masterDescription 
+        ? `👩‍💼 Мастер: *${masterName}* (${masterDescription})`
+        : `👩‍💼 Мастер: *${masterName}*`;
+      
+      const message = `⏰ *Напоминание о записи*\n\n` +
+        `Через 24 часа у вас запись:\n\n` +
+        `${masterInfo}\n` +
+        `💇‍♀️ Услуга: ${serviceTitle}\n` +
+        `📅 ${dateStr}\n` +
+        `⏰ Время: ${time}\n\n` +
+        `Ждём вас! Не забудьте прийти или отмените запись заранее.`;
+  
+      await bot.telegram.sendMessage(clientTelegramId, message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Failed to send 24h reminder:', error);
+    }
+  },
+
+  // Напоминание клиенту за 1 час до записи
+  async sendReminder1h(
+    clientTelegramId: string,
+    masterName: string,
+    masterDescription: string | null,
+    serviceTitle: string,
+    date: Date,
+    time: string
+  ) {
+    if (!bot) return;
+
+    try {
+      const dateStr = formatDateRu(date);
+      const masterInfo = masterDescription 
+        ? `👩‍💼 Мастер: *${masterName}* (${masterDescription})`
+        : `👩‍💼 Мастер: *${masterName}*`;
+      
+      const message = `🔔 *Скоро ваша запись!*\n\n` +
+        `Через 1 час у вас запись:\n\n` +
+        `${masterInfo}\n` +
+        `💇‍♀️ Услуга: ${serviceTitle}\n` +
+        `📅 ${dateStr}\n` +
+        `⏰ Время: ${time}\n\n` +
+        `До встречи! 😊`;
+  
+      await bot.telegram.sendMessage(clientTelegramId, message, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('Failed to send 1h reminder:', error);
+    }
   }
 };
 

@@ -12,9 +12,11 @@ import publicRoutes from './routes/publicRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import testRoutes from './routes/testRoutes.js';
 import geocodeRoutes from './routes/geocodeRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 import { startBot } from './bot.js';
 import { db } from './db/index.js';
 import { sql } from 'drizzle-orm';
+import { reminderService } from './services/reminderService.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,6 +70,7 @@ app.use('/api/master', masterRoutes);
 app.use('/api', publicRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/geocode', geocodeRoutes); // Прокси для Yandex Maps
+app.use('/api/reviews', reviewRoutes); // Отзывы
 app.use('/api/test', testRoutes); // Тестовые endpoints
 
 app.get('/', (req, res) => {
@@ -87,5 +90,6 @@ app.use((err: Error, req: express.Request, res: express.Response, _next: express
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   startBot();
+  reminderService.startReminderScheduler();
 });
 

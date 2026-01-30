@@ -212,5 +212,17 @@ export const masterController = {
     if (!deleted) return res.status(404).json({ error: 'Service not found or not owned by you' });
     
     return res.json({ success: true });
+  },
+
+  async getStats(req: Request, res: Response) {
+    if (!req.user) return res.status(401).send();
+    
+    try {
+      const stats = await masterService.getStats(req.user.id);
+      return res.json(stats);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Failed to get stats' });
+    }
   }
 };

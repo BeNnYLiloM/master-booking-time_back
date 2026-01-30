@@ -92,3 +92,28 @@ export const appointmentsRelations = relations(appointments, ({ one }) => ({
   }),
 }));
 
+// --- REVIEWS ---
+export const reviews = pgTable('reviews', {
+  id: serial('id').primaryKey(),
+  masterId: integer('master_id').references(() => users.id).notNull(),
+  clientId: integer('client_id').references(() => users.id).notNull(),
+  appointmentId: integer('appointment_id').references(() => appointments.id).notNull(),
+  rating: integer('rating').notNull(), // 1-5 звезд
+  comment: text('comment'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  master: one(users, {
+    fields: [reviews.masterId],
+    references: [users.id],
+  }),
+  client: one(users, {
+    fields: [reviews.clientId],
+    references: [users.id],
+  }),
+  appointment: one(appointments, {
+    fields: [reviews.appointmentId],
+    references: [appointments.id],
+  }),
+}));

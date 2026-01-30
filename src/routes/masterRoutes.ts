@@ -12,6 +12,8 @@ router.put('/profile', masterController.updateProfile);
 router.post('/profile/avatar', uploadAvatar.single('avatar'), masterController.uploadAvatar);
 router.delete('/profile/avatar', masterController.deleteAvatar);
 
+router.get('/stats', masterController.getStats);
+
 router.post('/services', masterController.createService);
 router.get('/services', masterController.getServices);
 router.put('/services/:id', masterController.updateService);

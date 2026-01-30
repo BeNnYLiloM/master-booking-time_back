@@ -1,6 +1,6 @@
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, sql } from 'drizzle-orm';
 import { db } from '../db/index.js';
-import { users, services } from '../db/schema.js';
+import { users, services, appointments } from '../db/schema.js';
 import { deleteImage } from '../utils/cloudinary.js';
 
 export const masterService = {
@@ -228,6 +228,97 @@ export const masterService = {
     return db.query.users.findFirst({
       where: eq(users.id, userId)
     });
+  },
+
+  async getStats(userId: number) {
+    const now = new Date();
+    
+    // Начало текущей недели (понедельник)
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1));
+    weekStart.setHours(0, 0, 0, 0);
+    
+    // Начало текущего месяца
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Получаем записи за неделю (завершённые и подтверждённые)
+    const weekAppointments = await db.query.appointments.findMany({
+      where: and(
+        eq(appointments.masterId, userId),
+        gte(appointments.startTime, weekStart)
+      ),
+      with: {
+        service: true
+      }
+    });
+    
+    // Получаем записи за месяц
+    const monthAppointments = await db.query.appointments.findMany({
+      where: and(
+        eq(appointments.masterId, userId),
+        gte(appointments.startTime, monthStart)
+      ),
+      with: {
+        service: true
+      }
+    });
+    
+    // Подсчёт завершённых записей за неделю
+    const weekCompletedCount = weekAppointments.filter(a => 
+      a.status === 'completed'
+    ).length;
+    
+    // Подсчёт завершённых записей за месяц
+    const monthCompletedCount = monthAppointments.filter(a => 
+      a.status === 'completed'
+    ).length;
+    
+    // Подсчёт выручки за неделю (только завершённые)
+    const weekRevenue = weekAppointments
+      .filter(a => a.status === 'completed' && a.service)
+      .reduce((sum, a) => sum + (a.service?.price || 0), 0);
+    
+    // Подсчёт выручки за месяц (только завершённые)
+    const monthRevenue = monthAppointments
+      .filter(a => a.status === 'completed' && a.service)
+      .reduce((sum, a) => sum + (a.service?.price || 0), 0);
+    
+    // Поиск самой популярной услуги (по количеству завершённых записей за всё время)
+    const serviceStats = await db
+      .select({
+        serviceId: appointments.serviceId,
+        count: sql<number>`count(*)::int`
+      })
+      .from(appointments)
+      .where(and(
+        eq(appointments.masterId, userId),
+        eq(appointments.status, 'completed')
+      ))
+      .groupBy(appointments.serviceId)
+      .orderBy(sql`count(*) DESC`)
+      .limit(1);
+    
+    let popularService = null;
+    if (serviceStats.length > 0 && serviceStats[0].serviceId) {
+      popularService = await db.query.services.findFirst({
+        where: eq(services.id, serviceStats[0].serviceId)
+      });
+    }
+    
+    return {
+      week: {
+        appointments: weekCompletedCount,
+        revenue: weekRevenue
+      },
+      month: {
+        appointments: monthCompletedCount,
+        revenue: monthRevenue
+      },
+      popularService: popularService ? {
+        title: popularService.title,
+        count: serviceStats[0].count
+      } : null
+    };
   }
 };
 
