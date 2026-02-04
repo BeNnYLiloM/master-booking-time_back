@@ -38,5 +38,13 @@ export const authController = {
       return res.status(500).json({ error: 'Internal server error' });
     }
   },
+
+  async me(req: Request, res: Response) {
+    // Middleware уже проверил авторизацию и добавил user в req
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    return res.json({ user: req.user });
+  },
 };
 
