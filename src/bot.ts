@@ -389,12 +389,21 @@ export function startBot() {
           );
         }
 
-        // Обновляем сообщение клиенту
+        // Обновляем сообщение клиенту с кнопкой для отзыва
+        const webAppUrl = process.env.WEB_APP_URL;
+        const reviewUrl = `${webAppUrl}/client/appointments`;
+        
         await ctx.editMessageText(
-          ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
-            ? ctx.callbackQuery.message.text + '\n\n✅ *Вы подтвердили выполнение услуги. Спасибо!*'
-            : '✅ Услуга подтверждена',
-          { parse_mode: 'Markdown' }
+          (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
+            ? ctx.callbackQuery.message.text 
+            : '🎉 Услуга оказана!') + '\n\n✅ *Вы подтвердили выполнение услуги. Спасибо!*\n\n' +
+            '⭐️ Не забудьте оставить отзыв о работе мастера!',
+          {
+            parse_mode: 'Markdown',
+            ...Markup.inlineKeyboard([
+              Markup.button.webApp('⭐️ Оставить отзыв', reviewUrl)
+            ])
+          }
         );
         
         return ctx.answerCbQuery('✅ Спасибо за подтверждение!');
