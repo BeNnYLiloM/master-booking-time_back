@@ -30,7 +30,13 @@ export const appointmentService = {
       const startTime = new Date(data.dateStr);
       startTime.setHours(hours, minutes, 0, 0);
 
-      const endTime = new Date(startTime.getTime() + service.duration * 60 * 1000);
+      // Получаем профиль мастера для breakDuration
+      const master = await tx.query.users.findFirst({
+        where: eq(users.id, data.masterId),
+      });
+
+      const breakDuration = master?.masterProfile?.breakDuration ?? 15; // По умолчанию 15 минут
+      const endTime = new Date(startTime.getTime() + (service.duration + breakDuration) * 60 * 1000);
 
       // 3. Check for Overlaps (Race condition check)
       // We check if any "confirmed" or "pending" appointment overlaps

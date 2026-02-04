@@ -47,14 +47,16 @@ export const masterService = {
     });
   },
 
-  async createService(userId: number, data: { title: string; price: number; duration: number; currency: string; locationType?: string; imageUrl?: string }) {
+  async createService(userId: number, data: { title: string; description?: string; price: number; duration: number; currency: string; categoryId?: number | null; locationType?: string; imageUrl?: string }) {
     const [newService] = await db.insert(services)
       .values({
         masterId: userId,
         title: data.title,
+        description: data.description,
         price: data.price,
         duration: data.duration,
         currency: data.currency,
+        categoryId: data.categoryId,
         locationType: (data.locationType as 'at_master' | 'at_client' | 'both') || 'at_master',
         imageUrl: data.imageUrl
       })
@@ -73,9 +75,11 @@ export const masterService = {
 
   async updateService(serviceId: number, userId: number, data: {
     title?: string;
+    description?: string;
     price?: number;
     duration?: number;
     currency?: string;
+    categoryId?: number | null;
     locationType?: 'at_master' | 'at_client' | 'both';
   }) {
     const [updated] = await db.update(services)

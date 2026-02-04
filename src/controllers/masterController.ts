@@ -28,9 +28,11 @@ const profileSchema = z.object({
 
 const serviceSchema = z.object({
   title: z.string().min(1),
+  description: z.string().optional(), // Описание услуги
   price: z.number().positive(),
   duration: z.number().positive(),
   currency: z.string().default('RUB'),
+  categoryId: z.number().nullable().optional(), // Категория услуги
   locationType: z.enum(['at_master', 'at_client', 'both']).default('at_master')
 });
 
