@@ -29,6 +29,20 @@
       "when": 1769798808970,
       "tag": "0003_lying_madelyne_pryor",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1770227985434,
+      "tag": "0004_foamy_sheva_callister",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1770229418407,
+      "tag": "0005_nasty_felicia_hardy",
+      "breakpoints": true
     }
   ]
 }

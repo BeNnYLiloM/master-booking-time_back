@@ -13,6 +13,7 @@ import appointmentRoutes from './routes/appointmentRoutes.js';
 import testRoutes from './routes/testRoutes.js';
 import geocodeRoutes from './routes/geocodeRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import { startBot } from './bot.js';
 import { db } from './db/index.js';
 import { sql } from 'drizzle-orm';
@@ -67,6 +68,7 @@ app.get('/health', async (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/master', masterRoutes);
+app.use('/api/master', categoryRoutes); // Категории услуг
 app.use('/api', publicRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/geocode', geocodeRoutes); // Прокси для Yandex Maps

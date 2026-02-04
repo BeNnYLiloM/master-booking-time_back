@@ -14,6 +14,7 @@ export const users = pgTable('users', {
     description?: string;
     avatarUrl?: string;
     phoneNumber?: string;
+    breakDuration?: number; // Время отдыха после услуги в минутах (по умолчанию 15)
     workingDates: {
       [date: string]: { // "YYYY-MM-DD"
         start: string;  // "HH:MM"
@@ -33,15 +34,36 @@ export const users = pgTable('users', {
 
 export const usersRelations = relations(users, ({ many }) => ({
   services: many(services),
+  serviceCategories: many(serviceCategories),
   masterAppointments: many(appointments, { relationName: 'masterAppointments' }),
   clientAppointments: many(appointments, { relationName: 'clientAppointments' }),
+}));
+
+// --- SERVICE CATEGORIES ---
+export const serviceCategories = pgTable('service_categories', {
+  id: serial('id').primaryKey(),
+  masterId: integer('master_id').references(() => users.id).notNull(),
+  name: text('name').notNull(),
+  imageUrl: text('image_url'),
+  order: integer('order').default(0).notNull(), // Порядок отображения
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const serviceCategoriesRelations = relations(serviceCategories, ({ one, many }) => ({
+  master: one(users, {
+    fields: [serviceCategories.masterId],
+    references: [users.id],
+  }),
+  services: many(services),
 }));
 
 // --- SERVICES ---
 export const services = pgTable('services', {
   id: serial('id').primaryKey(),
   masterId: integer('master_id').references(() => users.id).notNull(),
+  categoryId: integer('category_id').references(() => serviceCategories.id), // null = без категории
   title: text('title').notNull(),
+  description: text('description'), // Описание услуги (опционально)
   price: integer('price').notNull(), // Stored in cents/smallest unit or just raw number
   duration: integer('duration').default(60).notNull(), // minutes
   currency: text('currency').default('RUB').notNull(),
@@ -54,6 +76,10 @@ export const servicesRelations = relations(services, ({ one }) => ({
   master: one(users, {
     fields: [services.masterId],
     references: [users.id],
+  }),
+  category: one(serviceCategories, {
+    fields: [services.categoryId],
+    references: [serviceCategories.id],
   }),
 }));
 

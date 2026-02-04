@@ -29,6 +29,16 @@ const avatarStorage = new CloudinaryStorage({
   } as any,
 });
 
+// Хранилище для изображений категорий
+const categoryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'masterbookbot/categories',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, height: 600, crop: 'limit', quality: 'auto' }],
+  } as any,
+});
+
 // Multer middleware для загрузки фото услуг
 export const uploadServiceImage = multer({
   storage: serviceStorage,
@@ -40,6 +50,14 @@ export const uploadServiceImage = multer({
 // Multer middleware для загрузки аватаров
 export const uploadAvatar = multer({
   storage: avatarStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+});
+
+// Multer middleware для загрузки изображений категорий
+export const uploadCategoryImage = multer({
+  storage: categoryStorage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
   },
