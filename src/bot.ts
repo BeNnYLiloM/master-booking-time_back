@@ -391,7 +391,7 @@ export function startBot() {
 
         // Обновляем сообщение клиенту с кнопкой для отзыва
         const webAppUrl = process.env.WEB_APP_URL;
-        const reviewUrl = `${webAppUrl}/client/appointments`;
+        const reviewUrl = `${webAppUrl}/client/appointments?review=${appointmentId}`;
         
         await ctx.editMessageText(
           (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
