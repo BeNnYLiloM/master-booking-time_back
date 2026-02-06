@@ -84,6 +84,7 @@ export const appointmentService = {
         service: true,
         master: role === 'client' ? true : undefined,
         client: role === 'master' ? true : undefined,
+        review: true, // Добавляем информацию об отзыве
       },
       orderBy: (appointments, { desc }) => [desc(appointments.startTime)],
     });

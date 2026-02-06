@@ -116,6 +116,10 @@ export const appointmentsRelations = relations(appointments, ({ one }) => ({
     fields: [appointments.serviceId],
     references: [services.id],
   }),
+  review: one(reviews, {
+    fields: [appointments.id],
+    references: [reviews.appointmentId],
+  }),
 }));
 
 // --- REVIEWS ---
