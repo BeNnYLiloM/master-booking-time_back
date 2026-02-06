@@ -86,6 +86,32 @@ export const appointmentController = {
     return res.json(appointments);
   },
 
+  async getOne(req: Request, res: Response) {
+    try {
+      if (!req.user) return res.status(401).send();
+      
+      const appointmentId = parseInt(req.params.id);
+      if (isNaN(appointmentId)) {
+        return res.status(400).json({ error: 'Invalid appointment ID' });
+      }
+
+      const appointment = await appointmentService.getAppointmentById(appointmentId);
+      
+      if (!appointment) {
+        return res.status(404).json({ error: 'Appointment not found' });
+      }
+
+      // Проверяем что пользователь имеет доступ к этой записи
+      if (appointment.clientId !== req.user.id && appointment.masterId !== req.user.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      return res.json(appointment);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message || 'Failed to get appointment' });
+    }
+  },
+
   async cancel(req: Request, res: Response) {
     try {
       if (!req.user) return res.status(401).send();
