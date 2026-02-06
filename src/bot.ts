@@ -390,9 +390,10 @@ export function startBot() {
         }
 
         // Обновляем сообщение клиенту с кнопкой для отзыва
+        const botUsername = ctx.botInfo?.username;
         const webAppUrl = process.env.WEB_APP_URL;
-        // Используем WebApp кнопку с прямой ссылкой на страницу отзыва
-        const reviewUrl = `${webAppUrl}/client/review?appointment_id=${appointmentId}`;
+        // Используем /app с startapp параметром - это единственный способ передать данные в WebApp
+        const reviewUrl = `https://t.me/${botUsername}/app?startapp=review_${appointmentId}`;
         
         await ctx.editMessageText(
           (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
@@ -402,7 +403,7 @@ export function startBot() {
           {
             parse_mode: 'Markdown',
             ...Markup.inlineKeyboard([
-              Markup.button.webApp('⭐️ Оставить отзыв', reviewUrl)
+              Markup.button.url('⭐️ Оставить отзыв', reviewUrl)
             ])
           }
         );
