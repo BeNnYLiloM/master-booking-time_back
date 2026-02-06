@@ -391,10 +391,8 @@ export function startBot() {
 
         // Обновляем сообщение клиенту с кнопкой для отзыва
         const webAppUrl = process.env.WEB_APP_URL;
-        // Telegram WebApp не поддерживает глубокие ссылки напрямую
-        // Используем startapp параметр для передачи ID записи
-        const botUsername = ctx.botInfo?.username;
-        const reviewUrl = `https://t.me/${botUsername}?startapp=review_${appointmentId}`;
+        // Используем WebApp кнопку с прямой ссылкой на страницу отзыва
+        const reviewUrl = `${webAppUrl}/client/review?appointment_id=${appointmentId}`;
         
         await ctx.editMessageText(
           (ctx.callbackQuery.message && 'text' in ctx.callbackQuery.message 
@@ -404,7 +402,7 @@ export function startBot() {
           {
             parse_mode: 'Markdown',
             ...Markup.inlineKeyboard([
-              Markup.button.url('⭐️ Оставить отзыв', reviewUrl)
+              Markup.button.webApp('⭐️ Оставить отзыв', reviewUrl)
             ])
           }
         );
