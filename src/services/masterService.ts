@@ -33,12 +33,28 @@ export const masterService = {
         end: string;
       };
     };
+    location?: {
+      type: string;
+      address?: { text: string; coordinates: [number, number] };
+    };
   }) {
-    // Ensure user is master
+    // Получаем текущий профиль, чтобы сохранить поля, которые не приходят в этом запросе (avatarUrl, breakDuration и др.)
+    const currentUser = await db.query.users.findFirst({
+      where: eq(users.id, userId)
+    });
+    
+    const currentProfile = (currentUser?.masterProfile as Record<string, unknown>) || {};
+    
+    // Мержим: существующий профиль + новые данные (новые данные перезаписывают совпадающие ключи)
+    const mergedProfile = {
+      ...currentProfile,
+      ...profileData
+    };
+
     await db.update(users)
       .set({ 
         role: 'master',
-        masterProfile: profileData 
+        masterProfile: mergedProfile 
       })
       .where(eq(users.id, userId));
     

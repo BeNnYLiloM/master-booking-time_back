@@ -10,6 +10,7 @@ const profileSchema = z.object({
   displayName: z.string().optional(),
   description: z.string().optional(),
   phoneNumber: z.string().optional(),
+  breakDuration: z.number().optional(),
   workingDates: z.record(
     z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD
     z.object({
