@@ -33,13 +33,9 @@ export const slotService = {
     const slotDurationMs = serviceDuration * 60 * 1000;
 
     // Parse start and end times from schedule (format "HH:MM")
-    const [startHour, startMinute] = daySchedule.start.split(':').map(Number);
-    const [endHour, endMinute] = daySchedule.end.split(':').map(Number);
-    
-    // Создаём даты корректно - парсим YYYY-MM-DD как локальную дату
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const workStart = new Date(year, month - 1, day, startHour, startMinute, 0, 0);
-    const workEnd = new Date(year, month - 1, day, endHour, endMinute, 0, 0);
+    // Формируем даты явно в UTC для консистентности с appointmentService
+    const workStart = new Date(`${dateStr}T${daySchedule.start}:00.000Z`);
+    const workEnd = new Date(`${dateStr}T${daySchedule.end}:00.000Z`);
 
     // 4. Fetch Existing Bookings
     // We need appointments that overlap with the working day
@@ -69,7 +65,7 @@ export const slotService = {
 
       if (!isOverlapping) {
         slots.push({
-          time: currentSlotStart.toTimeString().slice(0, 5), // "HH:MM"
+          time: currentSlotStart.toISOString().slice(11, 16), // "HH:MM" в UTC
           isAvailable: true
         });
       }

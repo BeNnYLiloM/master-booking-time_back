@@ -25,10 +25,8 @@ export const appointmentService = {
       if (service.masterId !== data.masterId) throw new Error('Service does not belong to master');
 
       // 2. Calculate Start and End Time
-      // timeStr is "HH:MM"
-      const [hours, minutes] = data.timeStr.split(':').map(Number);
-      const startTime = new Date(data.dateStr);
-      startTime.setHours(hours, minutes, 0, 0);
+      // Формируем дату явно в UTC, чтобы 09:15 всегда было 09:15 UTC
+      const startTime = new Date(`${data.dateStr}T${data.timeStr}:00.000Z`);
 
       // Получаем профиль мастера для breakDuration
       const master = await tx.query.users.findFirst({
