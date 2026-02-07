@@ -34,7 +34,7 @@ export const masterService = {
       };
     };
     location?: {
-      type: string;
+      type: 'fixed' | 'mobile' | 'both';
       address?: { text: string; coordinates: [number, number] };
     };
   }) {
